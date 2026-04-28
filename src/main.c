@@ -1,135 +1,112 @@
 #include <genesis.h>
 #include "resources.h"
+#include "player.h"
+#include "boss.h"
+#include "shots.h"
+#include "background.h"
+#include "enemies.h"
 
 /**
  * Mecha Sorcerer - Mega Drive Game
- * Project initialized by Antigravity
+ * Refactored with Game States by Antigravity
  */
 
-#define MAX_SHOTS 5
+typedef enum {
+    STATE_TITLE,
+    STATE_PLAYING,
+    STATE_GAMEOVER,
+    STATE_VICTORY
+} GameState;
 
-// Estruturas
-typedef struct {
-    int x, y;
-    bool active;
-} Shot;
+GameState currentState = STATE_TITLE;
 
-typedef struct {
-    Sprite* sprite;
-    int x, y;
-    int health;
-    bool flash;
-} Boss;
-
-// Globais
-Shot shots[MAX_SHOTS];
-Boss boss;
-Sprite* player;
-
-int pX = 50, pY = 150;
-int velY = 0;
-bool jumping = false;
-
-// Constantes
-#define FLOOR_Y 160
-#define GRAVITY 1
-
-void handleInput() {
-    u16 value = JOY_readJoypad(JOY_1);
-
-    if (value & BUTTON_RIGHT) pX += 2;
-    if (value & BUTTON_LEFT)  pX -= 2;
-
-    if ((value & BUTTON_B) && !jumping) {
-        velY = -10;
-        jumping = true;
-    }
-
-    if (value & BUTTON_A) {
-        for(int i=0; i<MAX_SHOTS; i++) {
-            if(!shots[i].active) {
-                shots[i].active = true;
-                shots[i].x = pX + 20;
-                shots[i].y = pY + 10;
-                break;
-            }
-        }
-    }
-}
-
-void updatePhysics() {
-    pY += velY;
-    velY += GRAVITY;
-
-    if (pY >= FLOOR_Y) {
-        pY = FLOOR_Y;
-        velY = 0;
-        jumping = false;
-    }
-
-    for(int i=0; i<MAX_SHOTS; i++) {
-        if(shots[i].active) {
-            shots[i].x += 4;
-            if(shots[i].x > 320) shots[i].active = false;
-        }
-    }
-}
-
-void handleBoss() {
-    static int timer = 0;
-    timer++;
+void handleTitle() {
+    VDP_drawText("MECHA SORCERER", 13, 10);
+    VDP_drawText("PRESS START", 14, 16);
     
-    // Movimento flutuante do Boss
-    boss.y = 80 + (sinFix16(timer << 2) >> 4);
-    SPR_setPosition(boss.sprite, boss.x, boss.y);
-
-    // Detecção de Dano
-    for(int i=0; i<MAX_SHOTS; i++) {
-        if(shots[i].active) {
-            if(shots[i].x > boss.x && shots[i].x < boss.x + 64 &&
-               shots[i].y > boss.y && shots[i].y < boss.y + 64) {
-                
-                shots[i].active = false;
-                boss.health -= 2;
-                boss.flash = true;
-            }
-        }
+    u16 joy = JOY_readJoypad(JOY_1);
+    if (joy & BUTTON_START) {
+        VDP_clearPlane(BG_A, TRUE);
+        VDP_clearPlane(BG_B, TRUE);
+        
+        // Reinicializa módulos para começar o jogo
+        SHOTS_init();
+        PLAYER_init();
+        BOSS_init();
+        BG_init();
+        ENEMIES_init();
+        
+        currentState = STATE_PLAYING;
     }
+}
 
-    // HUD do Boss
-    VDP_drawText("GIGA-BYTE HP:", 2, 2);
-    for(int i=0; i<10; i++) {
-        if(i < boss.health / 10) VDP_drawText("=", 15+i, 2);
-        else VDP_drawText(" ", 15+i, 2);
-    }
+void handleVictory() {
+    VDP_drawText("VICTORY!", 16, 12);
+    VDP_drawText("BOSS DEFEATED", 13, 14);
+    waitMs(3000);
+    SYS_reset();
 }
 
 int main(bool hardReset) {
+    // Inicialização do Motor
     SPR_init();
     JOY_init();
-    VDP_setBackgroundColor(0);
-
-    // Inicializa Jogador e Boss com Sprites reais
-    player = SPR_addSprite(&wizard_mecha, pX, pY, TILE_ATTR(PAL1, TRUE, FALSE, FALSE));
     
-    boss.x = 220;
-    boss.y = 80;
-    boss.health = 100;
-    boss.sprite = SPR_addSprite(&boss_gigabyte, boss.x, boss.y, TILE_ATTR(PAL2, TRUE, FALSE, FALSE));
-
-    // Inicia a música
-    XGM_startPlay(battle_music);
+    // Configurações Globais
+    VDP_setBackgroundColor(16); // Usando um índice da paleta
+    PAL_setColor(16, 0x0424);   # #322947 convertido para BGR 9-bit (aprox)
 
     while(1) {
-        handleInput();
-        updatePhysics();
-        handleBoss();
+        switch(currentState) {
+            case STATE_TITLE:
+                handleTitle();
+                break;
 
-        // Atualiza posição do jogador
-        SPR_setPosition(player, pX, pY);
+            case STATE_PLAYING:
+                // 1. Entrada do Usuário
+                PLAYER_handleInput();
 
+                // 2. Lógica e Física
+                PLAYER_update();
+                SHOTS_update();
+                BOSS_update();
+                BG_update();
+                ENEMIES_update();
+
+                // Colisão Inimigo -> Player
+                for(int i=0; i<MAX_ENEMIES; i++) {
+                    if(enemies[i].active) {
+                        if(abs(enemies[i].x - PLAYER_getX()) < 20 && abs(enemies[i].y - PLAYER_getY()) < 20) {
+                            PLAYER_damage(10);
+                        }
+                    }
+                }
+
+                // Verificação de Condições de Fim de Jogo
+                if (PLAYER_getHealth() <= 0) {
+                    currentState = STATE_GAMEOVER;
+                }
+                if (BOSS_getHealth() <= 0) {
+                    currentState = STATE_VICTORY;
+                }
+                break;
+
+            case STATE_GAMEOVER:
+                VDP_drawText("GAME OVER", 15, 12);
+                waitMs(2000);
+                SYS_reset();
+                break;
+
+            case STATE_VICTORY:
+                handleVictory();
+                break;
+        }
+
+        // Atualização Gráfica
         SPR_update();
         SYS_doVBlankProcess();
     }
+    
     return 0;
 }
+

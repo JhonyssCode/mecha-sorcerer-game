@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mecha Sorcerer - Web Tester</title>
+    <style>
+        body { background: #111; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; color: white; font-family: sans-serif; }
+        canvas { border: 4px solid #444; background: #000; image-rendering: pixelated; }
+        .info { position: absolute; top: 10px; left: 10px; }
+    </style>
+</head>
+<body>
+    <div class="info">Setas para mover | Espaço para Pular | Z para Atirar</div>
+    <canvas id="gameCanvas" width="320" height="224"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let player = { x: 50, y: 160, vy: 0, jumping: false, hp: 100 };
+        let shots = [];
+        let enemies = [];
+        let stars = Array.from({length: 40}, () => ({ x: Math.random()*320, y: Math.random()*150, s: 1 + Math.random() }));
+
+        function update() {
+            // Gravidade
+            player.y += player.vy;
+            player.vy += 0.5;
+            if (player.y > 160) { player.y = 160; player.vy = 0; player.jumping = false; }
+
+            // Input
+            if (keys['ArrowRight']) player.x += 2;
+            if (keys['ArrowLeft']) player.x -= 2;
+
+            // Tiros
+            shots.forEach(s => s.x += 4);
+            shots = shots.filter(s => s.x < 320);
+
+            // Inimigos
+            if (Math.random() < 0.02) enemies.push({ x: 320, y: 160, hp: 10 });
+            enemies.forEach(e => {
+                e.x -= 1.5;
+                // Colisão com tiros
+                shots.forEach(s => {
+                    if (Math.abs(s.x - e.x) < 20 && Math.abs(s.y - e.y) < 20) {
+                        e.hp -= 10;
+                        s.x = 999;
+                    }
+                });
+                // Colisão com player
+                if (Math.abs(e.x - player.x) < 20 && Math.abs(e.y - player.y) < 20) {
+                    player.hp -= 0.5;
+                }
+            });
+            enemies = enemies.filter(e => e.x > -20 && e.hp > 0);
+
+            // Estrelas
+            stars.forEach(s => {
+                s.x -= s.s;
+                if (s.x < 0) s.x = 320;
+            });
+        }
+
+        function draw() {
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, 320, 224);
+
+            // Estrelas
+            ctx.fillStyle = 'white';
+            stars.forEach(s => ctx.fillRect(s.x, s.y, 1, 1));
+
+            // Chão
+            ctx.strokeStyle = '#0055ff';
+            ctx.strokeRect(0, 192, 320, 32);
+
+            // Player
+            ctx.fillStyle = '#00ff00';
+            ctx.fillRect(player.x, player.y, 32, 32);
+
+            // Inimigos
+            ctx.fillStyle = '#ff0000';
+            enemies.forEach(e => ctx.fillRect(e.x, e.y, 32, 32));
+
+            // Tiros
+            ctx.fillStyle = 'white';
+            shots.forEach(s => ctx.fillRect(s.x, s.y, 8, 4));
+
+            // HUD
+            ctx.fillStyle = 'white';
+            ctx.fillText('PLAYER HP: ' + Math.ceil(player.hp), 10, 20);
+        }
+
+        const keys = {};
+        window.onkeydown = e => { 
+            keys[e.code] = true; 
+            if (e.code === 'Space' && !player.jumping) { player.vy = -8; player.jumping = true; }
+            if (e.code === 'KeyZ') shots.push({ x: player.x + 32, y: player.y + 16 });
+        };
+        window.onkeyup = e => keys[e.code] = false;
+
+        function loop() {
+            update();
+            draw();
+            requestAnimationFrame(loop);
+        }
+        loop();
+    </script>
+</body>
+</html>
