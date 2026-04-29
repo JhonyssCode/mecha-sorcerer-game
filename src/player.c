@@ -12,8 +12,8 @@ static Sprite* playerSprite;
 static int pX = 50, pY = 150;
 static int velY = 0;
 static int health = 100;
-static bool jumping = false;
-static bool moving = false;
+static bool jumping = FALSE;
+static bool moving = FALSE;
 static int flashTimer = 0;
 
 void PLAYER_init() {
@@ -21,7 +21,8 @@ void PLAYER_init() {
     pY = FLOOR_Y;
     velY = 0;
     health = 100;
-    jumping = false;
+    jumping = FALSE;
+    PAL_setPalette(PAL1, wizard_mecha.palette->data, CPU);
     playerSprite = SPR_addSprite(&wizard_mecha, pX, pY, TILE_ATTR(PAL1, TRUE, FALSE, FALSE));
     SPR_setAnim(playerSprite, ANIM_IDLE);
 }
@@ -29,21 +30,23 @@ void PLAYER_init() {
 void PLAYER_handleInput() {
     u16 value = JOY_readJoypad(JOY_1);
 
-    moving = false;
+    moving = FALSE;
     if (value & BUTTON_RIGHT) {
         pX += 2;
-        moving = true;
-        SPR_setFlip(playerSprite, FALSE, FALSE);
+        moving = TRUE;
+        SPR_setHFlip(playerSprite, FALSE);
+        SPR_setVFlip(playerSprite, FALSE);
     }
     if (value & BUTTON_LEFT) {
         pX -= 2;
-        moving = true;
-        SPR_setFlip(playerSprite, TRUE, FALSE);
+        moving = TRUE;
+        SPR_setHFlip(playerSprite, TRUE);
+        SPR_setVFlip(playerSprite, FALSE);
     }
 
     if ((value & BUTTON_B) && !jumping) {
         velY = -10;
-        jumping = true;
+        jumping = TRUE;
     }
 
     if (value & BUTTON_A) {
@@ -74,7 +77,7 @@ void PLAYER_update() {
     if (pY >= FLOOR_Y) {
         pY = FLOOR_Y;
         velY = 0;
-        jumping = false;
+        jumping = FALSE;
     }
 
     // Efeito de Flash / Invulnerabilidade

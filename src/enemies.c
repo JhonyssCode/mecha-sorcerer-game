@@ -5,8 +5,9 @@
 Enemy enemies[MAX_ENEMIES];
 
 void ENEMIES_init() {
+    PAL_setPalette(PAL3, robot_enemies.palette->data, CPU);
     for(int i=0; i<MAX_ENEMIES; i++) {
-        enemies[i].active = false;
+        enemies[i].active = FALSE;
         enemies[i].sprite = NULL;
     }
 }
@@ -14,7 +15,7 @@ void ENEMIES_init() {
 void ENEMIES_spawn() {
     for(int i=0; i<MAX_ENEMIES; i++) {
         if(!enemies[i].active) {
-            enemies[i].active = true;
+            enemies[i].active = TRUE;
             enemies[i].x = 320;
             enemies[i].y = 160; // No chão
             enemies[i].health = 10;
@@ -40,7 +41,7 @@ void ENEMIES_update() {
                     if(shots[j].x > enemies[i].x && shots[j].x < enemies[i].x + 32 &&
                        shots[j].y > enemies[i].y && shots[j].y < enemies[i].y + 32) {
                         
-                        shots[j].active = false;
+                        shots[j].active = FALSE;
                         if (shots[j].sprite) SPR_setVisibility(shots[j].sprite, HIDDEN);
                         
                         enemies[i].health -= 10;
@@ -49,7 +50,7 @@ void ENEMIES_update() {
             }
 
             if(enemies[i].x < -32 || enemies[i].health <= 0) {
-                enemies[i].active = false;
+                enemies[i].active = FALSE;
                 if (enemies[i].sprite) SPR_setVisibility(enemies[i].sprite, HIDDEN);
             } else {
                 if (enemies[i].sprite) SPR_setPosition(enemies[i].sprite, enemies[i].x, enemies[i].y);

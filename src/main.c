@@ -29,11 +29,11 @@ void handleTitle() {
         VDP_clearPlane(BG_A, TRUE);
         VDP_clearPlane(BG_B, TRUE);
         
-        // Reinicializa módulos para começar o jogo
+        // Inicializa os módulos para começar o jogo
         SHOTS_init();
         PLAYER_init();
         BOSS_init();
-        BG_init();
+        BG_init(); // O BG_init agora cuida de desenhar o chão tecnológico e o fundo orgânico
         ENEMIES_init();
         
         currentState = STATE_PLAYING;
@@ -54,7 +54,7 @@ int main(bool hardReset) {
     
     // Configurações Globais
     VDP_setBackgroundColor(16); // Usando um índice da paleta
-    PAL_setColor(16, 0x0424);   # #322947 convertido para BGR 9-bit (aprox)
+    PAL_setColor(16, 0x0424);   // #322947 convertido para BGR 9-bit (aprox)
 
     while(1) {
         switch(currentState) {

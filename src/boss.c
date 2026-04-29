@@ -9,7 +9,8 @@ void BOSS_init() {
     boss.x = 220;
     boss.y = 80;
     boss.health = 100;
-    boss.flash = false;
+    boss.flash = FALSE;
+    PAL_setPalette(PAL2, boss_gigabyte.palette->data, CPU);
     boss.sprite = SPR_addSprite(&boss_gigabyte, boss.x, boss.y, TILE_ATTR(PAL2, TRUE, FALSE, FALSE));
 }
 
@@ -29,7 +30,7 @@ void BOSS_update() {
             PAL_setPalette(PAL2, palette_grey, CPU); 
         } else {
             PAL_setPalette(PAL2, boss_gigabyte.palette->data, CPU);
-            boss.flash = false;
+            boss.flash = FALSE;
             flashTimer = 0;
         }
     }
@@ -40,11 +41,11 @@ void BOSS_update() {
             if(shots[i].x > boss.x && shots[i].x < boss.x + 64 &&
                shots[i].y > boss.y && shots[i].y < boss.y + 64) {
                 
-                shots[i].active = false;
+                shots[i].active = FALSE;
                 if (shots[i].sprite) SPR_setVisibility(shots[i].sprite, HIDDEN);
                 
                 boss.health -= 2;
-                boss.flash = true;
+                boss.flash = TRUE;
             }
         }
     }
@@ -54,9 +55,11 @@ void BOSS_update() {
     // Desenha uma barra de 20 segmentos
     for(int i=0; i<20; i++) {
         if(i < boss.health / 5) {
-            VDP_setTileMapEx(BG_A, TILE_ATTR_FULL(PAL0, 1, 0, 0, TILE_USERINDEX), 12 + i, 2);
+            // Usa o tile seguro 1500 para a barra cheia
+            VDP_setTileMapXY(BG_A, TILE_ATTR_FULL(PAL0, 1, 0, 0, 1500), 12 + i, 2);
         } else {
-            VDP_setTileMapEx(BG_A, TILE_ATTR_FULL(PAL0, 1, 0, 0, 0), 12 + i, 2);
+            // Usa o tile 0 (transparente/vazio) para a barra vazia
+            VDP_setTileMapXY(BG_A, TILE_ATTR_FULL(PAL0, 1, 0, 0, 0), 12 + i, 2);
         }
     }
 }

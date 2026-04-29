@@ -4,8 +4,10 @@
 Shot shots[MAX_SHOTS];
 
 void SHOTS_init() {
+    // Usaremos a mesma paleta dos inimigos ou uma própria se disponível
+    PAL_setPalette(PAL3, laser_fx.palette->data, CPU); 
     for(int i=0; i<MAX_SHOTS; i++) {
-        shots[i].active = false;
+        shots[i].active = FALSE;
         shots[i].sprite = NULL;
     }
 }
@@ -13,7 +15,7 @@ void SHOTS_init() {
 void SHOTS_fire(int x, int y) {
     for(int i=0; i<MAX_SHOTS; i++) {
         if(!shots[i].active) {
-            shots[i].active = true;
+            shots[i].active = TRUE;
             shots[i].x = x;
             shots[i].y = y;
             
@@ -34,7 +36,7 @@ void SHOTS_update() {
             shots[i].x += 4;
             
             if(shots[i].x > 320) {
-                shots[i].active = false;
+                shots[i].active = FALSE;
                 if (shots[i].sprite) SPR_setVisibility(shots[i].sprite, HIDDEN);
             } else {
                 if (shots[i].sprite) SPR_setPosition(shots[i].sprite, shots[i].x, shots[i].y);
